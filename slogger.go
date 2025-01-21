@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -30,10 +29,23 @@ type PrettyHandler struct {
 // Log is a global logger instance used across the application.
 var Log *slog.Logger
 
+const (
+	LevelFatal = slog.Level(12)
+)
+
+var LevelNames = map[slog.Leveler]string{
+	LevelFatal: "FATAL",
+}
+
 // Handle processes a single log record, formats it, and outputs it to the configured io.Writer.
 func (h *PrettyHandler) Handle(ctx context.Context, r slog.Record) error {
 	// Change color based on log level
 	level := r.Level.String()
+
+	customeLevelName, ok := LevelNames[r.Level]
+	if ok {
+		level = customeLevelName
+	}
 
 	switch r.Level {
 	case slog.LevelDebug:
@@ -44,6 +56,9 @@ func (h *PrettyHandler) Handle(ctx context.Context, r slog.Record) error {
 		level = color.YellowString(level + " ")
 	case slog.LevelError:
 		level = color.RedString(level)
+	case LevelFatal:
+		level = color.RedString(level)
+
 	}
 
 	// Collect log attributes
@@ -116,13 +131,5 @@ func MakeLogger() {
 
 	handler := NewPrettyHandler(os.Stdout, opts)
 	Log = slog.New(handler)
-}
 
-// truncatePath truncates the file path to show only the last 4 components.
-func truncatePath(fullPath string) string {
-	parts := strings.Split(fullPath, string(filepath.Separator))
-	if len(parts) <= 4 {
-		return fullPath
-	}
-	return filepath.Join(parts[len(parts)-4:]...)
 }
