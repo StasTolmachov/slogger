@@ -1,4 +1,4 @@
-module slogger
+module github.com/StasTolmachov/slogger
 
 go 1.23.4
 
