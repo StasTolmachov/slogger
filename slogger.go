@@ -39,7 +39,7 @@ func (h *PrettyHandler) Handle(ctx context.Context, r slog.Record) error {
 	case slog.LevelDebug:
 		level = color.MagentaString(level)
 	case slog.LevelInfo:
-		level = color.BlueString(level + " ")
+		level = color.GreenString(level + " ")
 	case slog.LevelWarn:
 		level = color.YellowString(level + " ")
 	case slog.LevelError:
@@ -74,7 +74,7 @@ func (h *PrettyHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	// Format the timestamp
 	timeStr := color.GreenString(r.Time.Format(time.DateTime))
-	msg := r.Message
+	msg := color.BlueString(r.Message)
 
 	// Check for a trace ID in the context and add it to the log fields if present
 	traceID, ok := ctx.Value("trace-id").(uuid.UUID)
