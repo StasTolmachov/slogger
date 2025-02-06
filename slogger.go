@@ -3,7 +3,6 @@ package slogger
 import (
 	"context"
 	"encoding/json"
-	"github.com/google/uuid"
 	"io"
 	"log"
 	"log/slog"
@@ -13,7 +12,32 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/google/uuid"
 )
+
+const (
+	LevelFatal = slog.Level(12)
+)
+
+var (
+	Log        *slog.Logger // Log is a global slogger instance used across the application.
+	LevelNames = map[slog.Leveler]string{
+		LevelFatal: "FATAL",
+	}
+)
+
+// NewPrettyHandler creates a new PrettyHandler with a given output writer and options.
+func NewPrettyHandler(
+	out io.Writer,
+	opts PrettyHandlerOptions,
+) *PrettyHandler {
+	h := &PrettyHandler{
+		Handler: slog.NewJSONHandler(out, &opts.SlogOpts),
+		l:       log.New(out, "", 0),
+	}
+
+	return h
+}
 
 // PrettyHandlerOptions contains options specific to the PrettyHandler, mainly around slog handling.
 type PrettyHandlerOptions struct {
@@ -26,15 +50,23 @@ type PrettyHandler struct {
 	l *log.Logger
 }
 
-// Log is a global logger instance used across the application.
-var Log *slog.Logger
+// MakeLogger initializes and configures the global slogger instance.
+func MakeLogger(debug bool) {
 
-const (
-	LevelFatal = slog.Level(12)
-)
+	level := slog.LevelDebug
+	if !debug {
+		level = slog.LevelInfo
+	}
+	opts := PrettyHandlerOptions{
+		SlogOpts: slog.HandlerOptions{
+			Level:     level,
+			AddSource: true,
+		},
+	}
 
-var LevelNames = map[slog.Leveler]string{
-	LevelFatal: "FATAL",
+	handler := NewPrettyHandler(os.Stdout, opts)
+	Log = slog.New(handler)
+
 }
 
 // Handle processes a single log record, formats it, and outputs it to the configured io.Writer.
@@ -105,31 +137,4 @@ func (h *PrettyHandler) Handle(ctx context.Context, r slog.Record) error {
 	h.l.Printf("%v | %v | %v | %v | %v:%v %v", timeStr, level, msg, source["func"], source["file"], source["line"], string(b))
 
 	return nil
-}
-
-// NewPrettyHandler creates a new PrettyHandler with a given output writer and options.
-func NewPrettyHandler(
-	out io.Writer,
-	opts PrettyHandlerOptions,
-) *PrettyHandler {
-	h := &PrettyHandler{
-		Handler: slog.NewJSONHandler(out, &opts.SlogOpts),
-		l:       log.New(out, "", 0),
-	}
-
-	return h
-}
-
-// MakeLogger initializes and configures the global logger instance.
-func MakeLogger() {
-	opts := PrettyHandlerOptions{
-		SlogOpts: slog.HandlerOptions{
-			Level:     slog.LevelDebug,
-			AddSource: true,
-		},
-	}
-
-	handler := NewPrettyHandler(os.Stdout, opts)
-	Log = slog.New(handler)
-
 }
